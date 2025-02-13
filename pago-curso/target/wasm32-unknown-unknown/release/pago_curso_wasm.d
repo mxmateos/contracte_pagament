@@ -1,0 +1,1 @@
+/home/javi/Curso\ blockchain/contracte_pagament/pago-curso/target/wasm32-unknown-unknown/release/pago_curso_wasm.wasm: /home/javi/Curso\ blockchain/contracte_pagament/pago-curso/src/pago_curso.rs /home/javi/Curso\ blockchain/contracte_pagament/pago-curso/wasm/src/lib.rs

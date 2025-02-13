@@ -1,0 +1,1 @@
+/home/javi/Curso\ blockchain/contracte_pagament/pago-curso/target/debug/pago-curso-meta: /home/javi/Curso\ blockchain/contracte_pagament/pago-curso/meta/src/main.rs /home/javi/Curso\ blockchain/contracte_pagament/pago-curso/src/pago_curso.rs
