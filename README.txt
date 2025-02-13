@@ -16,5 +16,4 @@ Cada cop que es faci una classe, el gestor farà la signatura d'aquell dia, i ta
 
 A partir de la primera classe feta, canvia la data de venciment del contracte agumentant en una setmana.
 
-Extra: plataforma de pagament???....
 

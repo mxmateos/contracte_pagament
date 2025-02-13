@@ -13,15 +13,10 @@ pub enum CourseStatus {
     Ongoing,
     Completed,
 }
-#[derive(TopEncode, TopDecode, TypeAbi, PartialEq, Clone)]
-pub struct StudentData {
-    pub classes_completed: u64,
-    pub paid_amount: BigUint,
-}
 
 
 #[multiversx_sc::contract]
-pub trait CoursePaymentSc {
+pub trait PagoCurso {
     #[init]
     fn init(&self, teacher: ManagedAddress, course_fee: BigUint, total_classes: u64) {
 
@@ -53,13 +48,9 @@ pub trait CoursePaymentSc {
         require!(payment == course_fee, "Incorrect payment amount");
         require!(self.course_status().get() == CourseStatus::Ongoing,"Course is already completed");
         let caller = self.blockchain().get_caller();
-        require!( !self.students().contains(&caller),"Student is already enrolled");
-
+        require!(!self.students().contains_key(&caller), "Student is already enrolled");
         // Afegeix el pagament a l'array d'estudiants.
-        self.students().insert(caller.clone(), StudentData {
-                classes_completed: 0,
-                paid_amount: payment,
-            });
+        self.students().insert(caller.clone(), payment);
 
     }
 
@@ -67,19 +58,18 @@ pub trait CoursePaymentSc {
     #[endpoint]
     fn complete_class(&self) {
         let caller = self.blockchain().get_caller();
-        require!(self.students().contains(&caller),"Only enrolled students can complete classes");
-
-        let mut student_data = self.students().get(&caller);
+        require!(!self.students().contains_key(&caller), "Only enrolled students can complete classes");
         require!(self.course_status().get() == CourseStatus::Ongoing, "Course is already completed");
-
-        // Incrementem les clases completes per l'estudiant
-        student_data.classes_completed += 1;
-        self.students().insert(caller.clone(), student_data);
 
         // Calcula la part proporcional que s'envia al proferssor
         let proportional_payment = self.calculate_proportional_payment();
         let teacher = self.teacher().get();
         self.send().direct_egld(&teacher, &proportional_payment);
+
+        // modifica la cuantitat que li resta a l'estudiant del que ha pagat'
+        let mut student_payment = self.students().get(&caller).unwrap_or_else(|| BigUint::zero());
+        student_payment -= proportional_payment;
+        self.students().insert(caller.clone(), student_payment);
     }
 
     //El professor signa cada classe que fa per tenir el recompte de totes les classes fetes, això simplifica el contracte.
@@ -104,20 +94,15 @@ pub trait CoursePaymentSc {
     }
 
     fn refund_remaining_funds(&self) {
-        let total_classes = self.total_classes().get();
-        let course_fee = self.course_fee().get();
-        let proportional_payment = course_fee / total_classes;
-
-        for (student_address, student_data) in self.students().iter() {
-            let total_paid_by_student = student_data.paid_amount;
-            let total_proportional_payments = proportional_payment * student_data.classes_completed;
-
-            if total_paid_by_student > total_proportional_payments {
-                let refund_amount = total_paid_by_student - total_proportional_payments;
-                self.send().direct_egld(student_address, &refund_amount);
+        for (student_address, student_payment) in self.students().iter() {
+            if student_payment > BigUint::zero() {
+                self.send().direct_egld(&student_address, &student_payment);
+                self.students().insert(student_address.clone(), BigUint::zero());
             }
         }
     }
+
+
 
 
     #[view(calculateProportionalPayment)]
@@ -125,11 +110,6 @@ pub trait CoursePaymentSc {
         let course_fee = self.course_fee().get();
         let total_classes = self.total_classes().get();
         course_fee / total_classes
-    }
-
-    #[view(getCourseStatus)]
-    fn get_course_status(&self) -> CourseStatus {
-        self.course_status().get()
     }
 
     #[view(getCurrentFunds)]
@@ -144,9 +124,9 @@ pub trait CoursePaymentSc {
     #[storage_mapper("teacher")]
     fn teacher(&self) -> SingleValueMapper<ManagedAddress>;
 
-    #[view(getStudent)]
-    #[storage_mapper("student")]
-    fn students(&self) -> MapMapper<ManagedAddress, StudentData>;
+    #[view(getStudents)]
+    #[storage_mapper("students")]
+    fn students(&self) -> MapMapper<ManagedAddress, BigUint>;
 
     #[view(getCourseFee)]
     #[storage_mapper("course_fee")]
