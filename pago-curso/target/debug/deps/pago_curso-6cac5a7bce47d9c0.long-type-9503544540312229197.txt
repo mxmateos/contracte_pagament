@@ -1,0 +1,1 @@
+multiversx_sc::imports::MapMapper<<Self as multiversx_sc::contract_base::ContractBase>::Api, ManagedAddress<<Self as multiversx_sc::contract_base::ContractBase>::Api>, StudentData>
