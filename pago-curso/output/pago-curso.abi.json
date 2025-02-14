@@ -30,6 +30,10 @@
             {
                 "name": "total_classes",
                 "type": "u64"
+            },
+            {
+                "name": "deadline",
+                "type": "u64"
             }
         ],
         "outputs": []
@@ -61,6 +65,12 @@
             "outputs": []
         },
         {
+            "name": "claim",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
             "name": "calculateProportionalPayment",
             "mutability": "readonly",
             "inputs": [],
@@ -77,6 +87,16 @@
             "outputs": [
                 {
                     "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getDeadline",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
                 }
             ]
         },

@@ -8,7 +8,8 @@
 use multiversx_sc::derive_imports::*;
 use multiversx_sc::imports::*;
 
-#[derive(TopEncode, TopDecode, TypeAbi, PartialEq, Clone, Copy)]
+#[type_abi]
+#[derive(TopEncode, TopDecode, PartialEq, Clone, Copy)]
 pub enum CourseStatus {
     Ongoing,
     Completed,
@@ -18,13 +19,14 @@ pub enum CourseStatus {
 #[multiversx_sc::contract]
 pub trait PagoCurso {
     #[init]
-    fn init(&self, teacher: ManagedAddress, course_fee: BigUint, total_classes: u64) {
+    fn init(&self, teacher: ManagedAddress, course_fee: BigUint, total_classes: u64,  deadline: u64 ) {
 
         // Només el owner, que es el teacher, pot inicialitzar el contracte.
         let contract_owner = self.blockchain().get_owner_address();
         let caller = self.blockchain().get_caller();
         require!(caller == contract_owner, "Only the contract owner can initialize the contract");
-
+        require!( deadline > self.get_current_time(), "Deadline can't be in the past");
+        self.deadline().set(deadline);
         require!(course_fee > 0, "Course fee must be more than 0");
         require!(total_classes > 0, "Total classes must be more than 0");
 
@@ -44,7 +46,8 @@ pub trait PagoCurso {
     fn enroll(&self) {
         let payment = self.call_value().egld().clone_value();
         let course_fee = self.course_fee().get();
-
+        let current_time = self.blockchain().get_block_timestamp();
+        require!( current_time < self.deadline().get(), "cannot fund after deadline" );
         require!(payment == course_fee, "Incorrect payment amount");
         require!(self.course_status().get() == CourseStatus::Ongoing,"Course is already completed");
         let caller = self.blockchain().get_caller();
@@ -102,7 +105,18 @@ pub trait PagoCurso {
         }
     }
 
+    #[endpoint]
+    fn claim(&self) {
 
+        require!(self.get_current_time() > self.deadline().get(), "The deadline time is not reached.");
+
+        let caller = self.blockchain().get_caller();
+        let student_payment = self.students().get(&caller).unwrap_or_else(|| BigUint::zero());
+        //student_address = self.students(&caller).get();
+        self.send().direct_egld(&caller, &student_payment);
+        self.students().insert(caller.clone(), BigUint::zero());
+
+    }
 
 
     #[view(calculateProportionalPayment)]
@@ -118,7 +132,18 @@ pub trait PagoCurso {
             .get_sc_balance(&EgldOrEsdtTokenIdentifier::egld(), 0)
     }
 
+
+    // private
+    fn get_current_time(&self) -> u64 {
+        self.blockchain().get_block_timestamp()
+    }
+
+
     // Memoria blockchain
+
+    #[view(getDeadline)]
+    #[storage_mapper("deadline")]
+    fn deadline(&self) -> SingleValueMapper<u64>;
 
     #[view(getTeacher)]
     #[storage_mapper("teacher")]

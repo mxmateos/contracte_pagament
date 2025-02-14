@@ -6,9 +6,9 @@
 
 // Init:                                 1
 // Upgrade:                              1
-// Endpoints:                           11
+// Endpoints:                           13
 // Async Callback (empty):               1
-// Total number of exported functions:  14
+// Total number of exported functions:  16
 
 #![no_std]
 
@@ -23,8 +23,10 @@ multiversx_sc_wasm_adapter::endpoints! {
         enroll => enroll
         complete_class => complete_class
         sign_class => sign_class
+        claim => claim
         calculateProportionalPayment => calculate_proportional_payment
         getCurrentFunds => get_current_funds
+        getDeadline => deadline
         getTeacher => teacher
         getStudents => students
         getCourseFee => course_fee
