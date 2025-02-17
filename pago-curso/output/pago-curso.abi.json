@@ -20,10 +20,6 @@
     "constructor": {
         "inputs": [
             {
-                "name": "teacher",
-                "type": "Address"
-            },
-            {
                 "name": "course_fee",
                 "type": "BigUint"
             },

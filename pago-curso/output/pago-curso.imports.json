@@ -18,7 +18,6 @@
   "mBufferEq",
   "mBufferFinish",
   "mBufferFromBigIntUnsigned",
-  "mBufferGetArgument",
   "mBufferGetByteSlice",
   "mBufferGetBytes",
   "mBufferGetLength",

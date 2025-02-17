@@ -19,18 +19,13 @@ pub enum CourseStatus {
 #[multiversx_sc::contract]
 pub trait PagoCurso {
     #[init]
-    fn init(&self, teacher: ManagedAddress, course_fee: BigUint, total_classes: u64,  deadline: u64 ) {
+    fn init(&self, course_fee: BigUint, total_classes: u64,  deadline: u64 ) {
 
-        // Només el owner, que es el teacher, pot inicialitzar el contracte.
-        let contract_owner = self.blockchain().get_owner_address();
-        let caller = self.blockchain().get_caller();
-        require!(caller == contract_owner, "Only the contract owner can initialize the contract");
         require!( deadline > self.get_current_time(), "Deadline can't be in the past");
         self.deadline().set(deadline);
         require!(course_fee > 0, "Course fee must be more than 0");
         require!(total_classes > 0, "Total classes must be more than 0");
 
-        self.teacher().set(teacher);
         self.course_fee().set(course_fee);
         self.total_classes().set(total_classes);
         self.classes_completed().set(0);
@@ -50,9 +45,10 @@ pub trait PagoCurso {
         require!( current_time < self.deadline().get(), "cannot fund after deadline" );
         require!(payment == course_fee, "Incorrect payment amount");
         require!(self.course_status().get() == CourseStatus::Ongoing,"Course is already completed");
+
         let caller = self.blockchain().get_caller();
         require!(!self.students().contains_key(&caller), "Student is already enrolled");
-        // Afegeix el pagament a l'array d'estudiants.
+         //Afegeix el pagament a l'array d'estudiants.
         self.students().insert(caller.clone(), payment);
 
     }
@@ -79,10 +75,9 @@ pub trait PagoCurso {
     // per poder comptar el número real de classes fetes. I que això no depengui d'un o diversos estudiants.
     #[endpoint]
     fn sign_class(&self) {
-        let caller = self.blockchain().get_caller();
-        let teacher = self.teacher().get();
 
-        require!(caller == teacher, "Only the teacher can confirm the real class completion");
+        let caller = self.blockchain().get_caller();
+        require!(caller == self.blockchain().get_owner_address(),"only teacher can confirm the real class completion");
 
         // Incrementa el comptador de les classes
         let mut classes_completed = self.classes_completed().get();
@@ -145,13 +140,10 @@ pub trait PagoCurso {
     #[storage_mapper("deadline")]
     fn deadline(&self) -> SingleValueMapper<u64>;
 
-    #[view(getTeacher)]
-    #[storage_mapper("teacher")]
-    fn teacher(&self) -> SingleValueMapper<ManagedAddress>;
-
     #[view(getStudents)]
     #[storage_mapper("students")]
     fn students(&self) -> MapMapper<ManagedAddress, BigUint>;
+    //fn students(&self, donor: &ManagedAddress) -> SingleValueMapper<BigUint>;
 
     #[view(getCourseFee)]
     #[storage_mapper("course_fee")]
